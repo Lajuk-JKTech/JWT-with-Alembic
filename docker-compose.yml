@@ -1,0 +1,58 @@
+version: "3.8"
+
+services:
+  adminer-service:
+    image: adminer:latest
+    restart: unless-stopped
+    container_name: adminer
+    depends_on:
+      - postgres-service
+    networks:
+      - describly
+    ports:
+      - "8080:8080"
+
+  fastapi-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: fastapi
+    container_name: fastapi
+    restart: unless-stopped
+    depends_on:
+      - postgres-service
+    ports:
+      - "8000:8000"
+    networks:
+      - describly
+    volumes:
+      - ".:/usr/srv"
+
+  smtp-service:
+    image: axllent/mailpit
+    restart: unless-stopped
+    container_name: smtp
+    networks:
+      - describly
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+
+  postgres-service:
+    image: postgres:13
+    container_name: postgres
+    environment:
+      POSTGRES_USER: $POSTGRES_USER
+      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+      POSTGRES_DB: $POSTGRES_DB
+    networks:
+      - describly
+    volumes:
+      - describly_postgres_data:/var/lib/postgresql/data
+
+
+networks:
+  describly:
+volumes:
+  describly_postgres_data:
+    external: true
