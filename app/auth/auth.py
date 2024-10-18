@@ -16,7 +16,7 @@ class AuthHandler:
 
     def decode_jwt(self, token: str):
         try:
-            payload = jwt.decode(token, self.secret_key, algorithms=["HS256"])
+            payload = jwt.decode(token, self.secret_key, algorithms=["RS256"])
             user_id = payload.get("id")
             if user_id is None:
                 raise HTTPException(
