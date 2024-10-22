@@ -6,7 +6,7 @@
 ### Installation & Configuration
 - Install the Docker Desktop and Start It
 - Open the Terminal and navigate to the project folder.
-- Run `docker volume create describly_mysql_data` to create a docker volue in you machine. Required to persist the mysql data.
+- Run `docker volume create describly_postgres_data` to create a docker volue in you machine. Required to persist the mysql data.
 - Below will be your database connection details
 ```bash
 POSTGRES_HOST=postgres
