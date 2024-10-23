@@ -1,29 +1,32 @@
-import jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.orm import Session
-from app.config.database import get_session
-from app.models.user import VM_Users
+import jwt
 from app.config.settings import Settings
 
 settings = Settings()
 
-# Use FastAPI's HTTPBearer scheme to get the token from the Authorization header
 class AuthHandler:
     def __init__(self):
         self.security = HTTPBearer()  # Uses Bearer token authentication
-        self.secret_key = settings.SECRET_KEY
+        self.JWT_PUBLIC = settings.JWT_PUBLIC
 
     def decode_jwt(self, token: str):
         try:
-            payload = jwt.decode(token, self.secret_key, algorithms=["RS256"])
+            # Decode the token
+            payload = jwt.decode(token, self.JWT_PUBLIC, algorithms=["RS256"])
+
+            # Extract user ID and organization ID from the payload
             user_id = payload.get("id")
-            if user_id is None:
+            organization_id = payload.get("scope", {}).get("x-inveniam-organisationId")
+
+            if user_id is None or organization_id is None:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Invalid JWT payload"
                 )
-            return user_id
+
+            # Return both user_id and organization_id
+            return user_id, organization_id
         except jwt.ExpiredSignatureError:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -35,19 +38,11 @@ class AuthHandler:
                 detail=f"Invalid token: {str(e)}"
             )
 
-    def verify_user(self, user_id: str, db: Session):
-        user = db.query(VM_Users).filter(VM_Users.aggregateid == user_id).first()
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
-            )
-        return user
-
-    def __call__(self, credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer()), db: Session = Depends(get_session)):
+    def __call__(self, request: Request, credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer())):
         # Decode JWT token
         token = credentials.credentials
-        user_id = self.decode_jwt(token)
+        user_id, organization_id = self.decode_jwt(token)
 
-        # Verify user exists in the database
-        return self.verify_user(user_id, db)
+        # Set user_id and organization_id in the request state
+        request.state.user_id = user_id
+        request.state.organization_id = organization_id

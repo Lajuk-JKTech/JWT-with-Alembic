@@ -9,11 +9,11 @@
 - Run `docker volume create describly_postgres_data` to create a docker volue in you machine. Required to persist the mysql data.
 - Below will be your database connection details
 ```bash
-POSTGRES_HOST=postgres
+DB_HOST=inv-db
 POSTGRES_USER=root
-POSTGRES_PASSWORD=Describly&123
-POSTGRES_DB=fastapi
-POSTGRES_PORT=5432
+DB_PASSWORD=123456
+DB_DATABASE=invai
+DB_PORT=5432
 ```
 You do not need to change anything here, but if you would like to change the username, password or database name, you can modify it at this point in the `.env` file attached to this project. 
 
