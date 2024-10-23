@@ -1,4 +1,4 @@
-from fastapi import HTTPException, Request
+from fastapi import HTTPException
 from requests.auth import HTTPBasicAuth
 import requests
 from app.config.settings import get_settings
@@ -49,35 +49,28 @@ class AuthService:
             raise HTTPException(status_code=500, detail=f"Error fetching org token: {str(e)}")
 
     @staticmethod
-    def generate_org_token_flow(request: Request) -> str:
+    def generate_org_token_flow(organisation_id: str) -> str:
         """
         This function handles the entire flow of generating the organization-level token.
         It does the following:
-        - Decodes the JWT to get the organisation ID.
         - Fetches the FusionAuth token.
         - Fetches the SSO token.
         - Fetches the organization token.
         """
-
         try:
-            organisation_id = request.state.organization_id
-        except Exception as e:
-            raise HTTPException(status_code=401, detail=f"Error fetching Organization Id: {str(e)}")
-
-        try:
-            # Step 2: Get the FusionAuth token
+            # Step 1: Get the FusionAuth token
             fusion_auth_token = AuthService.get_fusion_auth_token()
         except HTTPException as e:
             raise HTTPException(status_code=e.status_code, detail=f"Error fetching FusionAuth token: {str(e.detail)}")
 
         try:
-            # Step 3: Get the SSO token
+            # Step 2: Get the SSO token
             sso_token = AuthService.get_sso_token(fusion_auth_token)
         except HTTPException as e:
             raise HTTPException(status_code=e.status_code, detail=f"Error fetching SSO token: {str(e.detail)}")
 
         try:
-            # Step 4: Get the organization-level token
+            # Step 3: Get the organization-level token
             org_token = AuthService.get_org_token(sso_token, organisation_id)
         except HTTPException as e:
             raise HTTPException(status_code=e.status_code, detail=f"Error fetching org token: {str(e.detail)}")

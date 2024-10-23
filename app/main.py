@@ -15,8 +15,14 @@ app = FastAPI(dependencies=[Depends(auth_handler)])  # Apply authentication glob
 @app.get("/generate-org-token")
 async def generate_org_token(request: Request):
     try:
-        # Call the function that encapsulates the entire token generation flow
-        org_token = AuthService.generate_org_token_flow(request)
+        # Step 1: Extract organisation_id from request state
+        try:
+            organisation_id = request.state.organization_id
+        except AttributeError:
+            raise HTTPException(status_code=401, detail="Organization ID not found in request state")
+
+        # Step 2: Call the function that encapsulates the entire token generation flow
+        org_token = AuthService.generate_org_token_flow(organisation_id)
         return {"org_token": org_token}
     except HTTPException as e:
         return {"error": e.detail}
