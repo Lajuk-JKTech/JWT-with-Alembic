@@ -15,18 +15,18 @@ class AuthHandler:
             # Decode the token
             payload = jwt.decode(token, self.JWT_PUBLIC, algorithms=["RS256"])
 
-            # Extract user ID and organization ID from the payload
+            # Extract user ID and organisation ID from the payload
             user_id = payload.get("id")
-            organization_id = payload.get("scope", {}).get("x-inveniam-organisationId")
+            organisation_id = payload.get("scope", {}).get("x-inveniam-organisationId")
 
-            if user_id is None or organization_id is None:
+            if user_id is None or organisation_id is None:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Invalid JWT payload"
                 )
 
-            # Return both user_id and organization_id
-            return user_id, organization_id
+            # Return both user_id and organisation_id
+            return user_id, organisation_id
         except jwt.ExpiredSignatureError:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -41,8 +41,8 @@ class AuthHandler:
     def __call__(self, request: Request, credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer())):
         # Decode JWT token
         token = credentials.credentials
-        user_id, organization_id = self.decode_jwt(token)
+        user_id, organisation_id = self.decode_jwt(token)
 
-        # Set user_id and organization_id in the request state
+        # Set user_id and organisation_id in the request state
         request.state.user_id = user_id
-        request.state.organization_id = organization_id
+        request.state.organisation_id = organisation_id

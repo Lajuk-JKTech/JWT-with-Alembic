@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     INV_IAM_SERVICE_HOST: str = os.environ.get("INV_IAM_SERVICE_HOST")
     INV_IAM_SERVICE_PORT: str = os.environ.get("INV_IAM_SERVICE_PORT")
 
-    # Dynamic URLs for SSO and Organization Login
+    # Dynamic URLs for SSO and organisation Login
     @property
     def SSO_URL(self) -> str:
         """
@@ -49,7 +49,7 @@ class Settings(BaseSettings):
     @property
     def ORG_LOGIN_URL(self) -> str:
         """
-        Dynamically generate the organization login URL based on the host and port.
+        Dynamically generate the organisation login URL based on the host and port.
         """
         return f"http://{self.INV_IAM_SERVICE_HOST}:{self.INV_IAM_SERVICE_PORT}/iam/organisation/login"
 

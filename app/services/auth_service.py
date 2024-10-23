@@ -51,11 +51,11 @@ class AuthService:
     @staticmethod
     def generate_org_token_flow(organisation_id: str) -> str:
         """
-        This function handles the entire flow of generating the organization-level token.
+        This function handles the entire flow of generating the organisation-level token.
         It does the following:
         - Fetches the FusionAuth token.
         - Fetches the SSO token.
-        - Fetches the organization token.
+        - Fetches the organisation token.
         """
         try:
             # Step 1: Get the FusionAuth token
@@ -70,7 +70,7 @@ class AuthService:
             raise HTTPException(status_code=e.status_code, detail=f"Error fetching SSO token: {str(e.detail)}")
 
         try:
-            # Step 3: Get the organization-level token
+            # Step 3: Get the organisation-level token
             org_token = AuthService.get_org_token(sso_token, organisation_id)
         except HTTPException as e:
             raise HTTPException(status_code=e.status_code, detail=f"Error fetching org token: {str(e.detail)}")

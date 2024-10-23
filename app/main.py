@@ -17,9 +17,9 @@ async def generate_org_token(request: Request):
     try:
         # Step 1: Extract organisation_id from request state
         try:
-            organisation_id = request.state.organization_id
+            organisation_id = request.state.organisation_id
         except AttributeError:
-            raise HTTPException(status_code=401, detail="Organization ID not found in request state")
+            raise HTTPException(status_code=401, detail="organisation ID not found in request state")
 
         # Step 2: Call the function that encapsulates the entire token generation flow
         org_token = AuthService.generate_org_token_flow(organisation_id)
@@ -37,14 +37,14 @@ def another_endpoint():
 
 @app.get("/protected-route")
 def protected_route(request: Request):
-    # Access user_id and organization_id from the request
+    # Access user_id and organisation_id from the request
     user_id = request.state.user_id
-    organization_id = request.state.organization_id
+    organisation_id = request.state.organisation_id
     settings = get_settings()
     sso=settings.SSO_URL
     org=settings.ORG_LOGIN_URL
 
-    return {"user_id": user_id, "organization_id": organization_id, "sso ":sso, "org": org}
+    return {"user_id": user_id, "organisation_id": organisation_id, "sso ":sso, "org": org}
 
 @app.get("/")
 async def root():
