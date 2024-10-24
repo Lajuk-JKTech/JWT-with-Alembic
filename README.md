@@ -10,7 +10,7 @@
 - Below will be your database connection details
 ```bash
 DB_HOST=inv-db
-POSTGRES_USER=root
+DB_USER=invuser
 DB_PASSWORD=123456
 DB_DATABASE=invai
 DB_PORT=5432
