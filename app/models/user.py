@@ -1,51 +1,77 @@
-from datetime import datetime
-from sqlalchemy import Boolean, Column, DateTime, Integer, String, func, JSON, Index, Enum
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from enum import Enum
+from sqlalchemy import Column, String, Integer, ForeignKey, JSON, TIMESTAMP, Text, Enum as SQLEnum
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
+from datetime import datetime, timezone
+import uuid
+import json
 from app.config.database import Base
 
-class VM_Users(Base):
-    __tablename__ = 'vm_users'
+def generate_uuid():
+  return str(uuid.uuid4())
 
-    # Columns
-    eventid = Column(String, nullable=True)
-    aggregateid = Column(UUID, primary_key=True, nullable=False)
-    aggregatetype = Column(String, nullable=True)
-    first_name = Column(String, nullable=True)
-    last_name = Column(String, nullable=True)
-    email = Column(String, nullable=False)
-    title = Column(String, nullable=True)
-    company = Column(String, nullable=True)
-    image = Column(String, nullable=True)
-    accepted_tc_version = Column(String, nullable=True, default='-1')
+class CustomEncoder(json.JSONEncoder):
+  def default(self, obj):
+    if isinstance(obj, datetime):
+      return obj.isoformat()
+    elif isinstance(obj, uuid.UUID):
+      return str(obj)
+    elif isinstance(obj, Enum):
+      return obj.name
+    return json.JSONEncoder.default(self, obj)
+  
+class Document(Base):
+  __tablename__ = 'documents'
 
-    # Enums for status and assignee_type
-    status = Column(
-        Enum('Invitation Pending', 'Active', 'Inactive', 'Not Invited', name='user_status_enum'),
-        nullable=True,
-        default='Not Invited'
-    )
+  document_id = Column(UUID(as_uuid=True), primary_key=True)
+  organisation_id = Column(UUID(as_uuid=True))
+  folder_id = Column(UUID(as_uuid=True))
+  room_id = Column(UUID(as_uuid=True))
+  document_name = Column(String)
+  created_at = Column(TIMESTAMP)
+  updated_at = Column(TIMESTAMP)
 
-    invite_accepted = Column(Boolean, default=False)
-    assignee_type = Column(
-        Enum('USER', 'AIA', 'TOKEN', name='user_assignee_type_enum'),
-        nullable=True,
-        default='USER'
-    )
-    
-    active_platform_user = Column(Boolean, default=True, nullable=False)
-    profile = Column(JSONB, nullable=True)
+  def to_json(self):
+    data = {key: value for key, value in vars(self).items() if not key.startswith('_') and not callable(value)}
+    return json.loads(json.dumps(data, cls=CustomEncoder))
 
-    created_by = Column(UUID, nullable=True)
-    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
-    updated_by = Column(UUID, nullable=True)
-    
-    version = Column(Integer, nullable=False, default=0)
+class Stage(Enum):
+  API_REQUEST = 'API_REQUEST'
+  DOWNLOAD_WORKER = 'DOWNLOAD_WORKER'
+  AI_PIPELINE = 'AI_PIPELINE'
+  UPLOAD_WORKER = 'UPLOAD_WORKER'
+  MONITOR_WORKER = 'MONITOR_WORKER'
 
-    # Indexes
-    __table_args__ = (
-        Index('vm_user_name_idx', func.lower(first_name), func.lower(last_name)),  # Index on lower(first_name), lower(last_name)
-        Index('vm_user_aggregate_idx', 'aggregateid'),  # Index on aggregateid
-        Index('user_vm_email_udx', func.lower(email), unique=True)  # Unique index on lower(email)
-    )
+class Status(Enum):
+  NOT_STARTED = 'NOT_STARTED'
+  IN_PROGRESS = 'IN_PROGRESS'
+  COMPLETED = 'COMPLETED'
+  FAILED = 'FAILED'
+
+class ExtractionType(Enum):
+  RENT_ROLL = 'RENT_ROLL'
+  LIMITED_PARTNERSHIP_AGREEMENT = 'LIMITED_PARTNERSHIP_AGREEMENT'
+  APPRAISAL = 'APPRAISAL'
+  CAPITAL_CALL = 'CAPITAL_CALL'
+
+class Extraction(Base):
+  __tablename__ = 'extractions'
+
+  extraction_id = Column(UUID(as_uuid=True), primary_key=True, default=generate_uuid)
+  document_id = Column(UUID(as_uuid=True), ForeignKey('documents.document_id'))
+  extraction_type = Column(SQLEnum(ExtractionType))
+  extraction_details = Column(JSON)
+  s3_document_path = Column(String)
+  s3_converted_document_path = Column(String, nullable=True)
+  s3_json_path = Column(String)
+  status = Column(SQLEnum(Status), default=Status.NOT_STARTED)
+  stage = Column(SQLEnum(Stage), default=Stage.API_REQUEST)
+  message = Column(Text, nullable=True)
+  created_at = Column(TIMESTAMP)
+  updated_at = Column(TIMESTAMP)
+  document = relationship("Document", back_populates="extractions")
+
+  def to_json(self):
+    data = {key: value for key, value in vars(self).items() if not key.startswith('_') and not callable(value)}
+    return json.loads(json.dumps(data, cls=CustomEncoder))
 
