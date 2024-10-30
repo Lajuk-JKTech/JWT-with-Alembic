@@ -9,28 +9,47 @@ class AuthHandler:
     def __init__(self):
         self.security = HTTPBearer()  # Uses Bearer token authentication
         self.JWT_PUBLIC = settings.JWT_PUBLIC
+        self.API_KEY = settings.API_KEY  # Get the API_KEY from settings
 
     def decode_jwt(self, token: str):
         try:
             # Decode the token
             payload = jwt.decode(token, self.JWT_PUBLIC, algorithms=["RS256"])
 
-            # Extract user ID and organisation ID from the payload
-            user_id = payload.get("id")
-            organisation_id = payload.get("scope", {}).get("x-inveniam-organisationId")
+            # Extract API key from the payload
+            api_key = payload.get("api_key")
 
-            if user_id is None or organisation_id is None:
+            # Check if API key is present in the payload
+            if api_key is None:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid JWT payload"
+                    detail="API key missing in JWT payload"
                 )
 
-            # Return both user_id and organisation_id
-            return user_id, organisation_id
+            # Check if the api_key matches the one in settings
+            if api_key != self.API_KEY:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid API key"
+                )
+
+            # Return a success flag or other data if needed
+            return True
+
         except jwt.ExpiredSignatureError:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token has expired"
+            )
+        except jwt.InvalidSignatureError:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token signature"
+            )
+        except jwt.DecodeError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Token could not be decoded"
             )
         except jwt.InvalidTokenError as e:
             raise HTTPException(
@@ -39,10 +58,9 @@ class AuthHandler:
             )
 
     def __call__(self, request: Request, credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer())):
-        # Decode JWT token
+        # Decode JWT token and validate api_key
         token = credentials.credentials
-        user_id, organisation_id = self.decode_jwt(token)
+        self.decode_jwt(token)
 
-        # Set user_id and organisation_id in the request state
-        request.state.user_id = user_id
-        request.state.organisation_id = organisation_id
+        # Optionally set a success flag or other data in request state if needed
+        request.state.is_authenticated = True

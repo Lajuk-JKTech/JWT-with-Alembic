@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     # JWT Configuration
     JWT_SECRET: str = os.environ.get("JWT_SECRET")
     JWT_PUBLIC: str = os.environ.get("JWT_PUBLIC")
+    API_KEY: str = "e4092ace-bcf8-45e0-b3a9-5cb0ef8e7af4"
 
     # M2M Authentication Config
     M2M_AIA_CLIENT_ID: str = os.environ.get("M2M_AIA_CLIENT_ID")

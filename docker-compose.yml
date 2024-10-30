@@ -27,6 +27,13 @@ services:
       - describly
     volumes:
       - ".:/usr/srv"
+    environment:
+      # Database configuration
+      DB_HOST: "inv-db"
+      DB_USERNAME: "invuser"
+      DB_PASSWORD: "123456"
+      DB_DATABASE: "invai"
+      DB_PORT: "5432"
 
   smtp-service:
     image: axllent/mailpit
@@ -42,17 +49,17 @@ services:
     image: postgres:13
     container_name: postgres
     environment:
-      POSTGRES_USER: $DB_USERNAME
-      POSTGRES_PASSWORD: $DB_PASSWORD
-      POSTGRES_DB: $DB_DATABASE
+      POSTGRES_USER: "invuser"
+      POSTGRES_PASSWORD: "123456"
+      POSTGRES_DB: "invai"
     networks:
       - describly
     volumes:
       - describly_postgres_data:/var/lib/postgresql/data
 
-
 networks:
   describly:
+
 volumes:
   describly_postgres_data:
     external: true

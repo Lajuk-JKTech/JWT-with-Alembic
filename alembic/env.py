@@ -27,33 +27,6 @@ if config.config_file_name is not None:
 # target_metadata = mymodel.Base.metadata
 target_metadata = Base.metadata
 
-
-# Helper functions for managing ENUMs
-def create_enum(name, values):
-    """Create a new ENUM type in PostgreSQL."""
-    op.execute(f"CREATE TYPE {name} AS ENUM {str(tuple(values))}")
-
-
-def drop_enum(name):
-    """Drop an ENUM type in PostgreSQL."""
-    op.execute(f"DROP TYPE {name}")
-
-
-def alter_enum(name, new_values):
-    """
-    Replace an ENUM with new values.
-    """
-    tmp_name = f"{name}_tmp"
-    create_enum(tmp_name, new_values)
-    
-    # Replace the current enum type with the new enum type
-    op.execute(f"ALTER TABLE vm_users ALTER COLUMN status TYPE {tmp_name} USING status::text::{tmp_name}")
-    drop_enum(name)
-    
-    # Rename the temporary enum back to the original name
-    op.execute(f"ALTER TYPE {tmp_name} RENAME TO {name}")
-
-
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
 

@@ -38,13 +38,12 @@ def another_endpoint():
 @app.get("/protected-route")
 def protected_route(request: Request):
     # Access user_id and organisation_id from the request
-    user_id = request.state.user_id
-    organisation_id = request.state.organisation_id
     settings = get_settings()
     sso=settings.SSO_URL
     org=settings.ORG_LOGIN_URL
+    authenticated=request.state.is_authenticated
 
-    return {"user_id": user_id, "organisation_id": organisation_id, "sso ":sso, "org": org}
+    return {"sso ":sso, "org": org, "authenticated":authenticated }
 
 @app.get("/")
 async def root():
