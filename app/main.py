@@ -1,35 +1,33 @@
 from fastapi import FastAPI, Depends, Request, HTTPException
-from app.auth.auth import AuthHandler
+from app.auth.auth import AuthHandler, AuthHandlerUser
 from app.services.auth_service import AuthService
 from app.config.settings import get_settings
 
-# app = FastAPI()
-
-# Instantiate the AuthHandler to use in the API routes
+# Instantiate both authentication handlers
 auth_handler = AuthHandler()
+auth_handler_user = AuthHandlerUser()
 
-app = FastAPI(dependencies=[Depends(auth_handler)])  # Apply authentication globally
+# Initialize FastAPI app with `auth_handler_user` as the default dependency
+app = FastAPI(dependencies=[Depends(auth_handler_user)])
 
-# Define API endpoints without explicitly passing `current_user`
+# Override with `auth_handler` (UUID-based) for this specific route
+@app.get("/simple-endpoint", dependencies=[Depends(auth_handler)])
+def simple_endpoint():
+    return {"message": "This is a simple endpoint that requires UUID-based authentication"}
+
+# All remaining routes will use `auth_handler_user` (JWT-based) by default
 
 @app.get("/generate-org-token")
 async def generate_org_token(request: Request):
     try:
-        # Step 1: Extract organisation_id from request state
-        try:
-            organisation_id = request.state.organisation_id
-        except AttributeError:
-            raise HTTPException(status_code=401, detail="organisation ID not found in request state")
-
-        # Step 2: Call the function that encapsulates the entire token generation flow
+        # Extract organisation_id from request state
+        organisation_id = request.state.organisation_id
         org_token = AuthService.generate_org_token_flow(organisation_id)
         return {"org_token": org_token}
+    except AttributeError:
+        raise HTTPException(status_code=401, detail="Organisation ID not found in request state")
     except HTTPException as e:
         return {"error": e.detail}
-
-@app.get("/simple-endpoint")
-def simple_endpoint():
-    return {"message": "This is a simple endpoint that requires authentication"}
 
 @app.post("/another-endpoint")
 def another_endpoint():
@@ -37,14 +35,12 @@ def another_endpoint():
 
 @app.get("/protected-route")
 def protected_route(request: Request):
-    # Access user_id and organisation_id from the request
     settings = get_settings()
-    sso=settings.SSO_URL
-    org=settings.ORG_LOGIN_URL
-    authenticated=request.state.is_authenticated
+    sso = settings.SSO_URL
+    org = settings.ORG_LOGIN_URL
+    return {"sso": sso, "org": org}
 
-    return {"sso ":sso, "org": org, "authenticated":authenticated }
-
-@app.get("/")
+# Unauthenticated route, bypasses all auth handlers
+@app.get("/", dependencies=[])
 async def root():
-    return {"message": "Hi, setrup is done & working."}
+    return {"message": "Hi, setup is done & working."}
